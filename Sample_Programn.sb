@@ -1,0 +1,97 @@
+Local_Register_Segment_1 = 1
+Local_Register_Button_1 = 2
+Local_Register_Timer_1 = 3
+Local_Registers  = 199
+LCD_Display_Board_Registers = 201
+Holding_Registers = 0
+DXMLED_01_Register = 1102
+DXMLED_02_Register = 1103
+DXMLED_03_Register = 1104
+
+DummyBit_01 = 0
+DummyBit_02 = 0
+DummyBit_03 = 0
+DummyBit_04 = 0
+Step_01 = 0
+
+FUNCTION ResetLCDRegisters
+    TurnOffDXMLed01 = SETREG (DXMLED_01_Register, 0, LCD_Display_Board_Registers, Holding_Registers)
+    TurnOffDXMLed02 = SETREG (DXMLED_02_Register, 0, LCD_Display_Board_Registers, Holding_Registers)
+    TurnOffDXMLed03 = SETREG (DXMLED_03_Register, 0, LCD_Display_Board_Registers, Holding_Registers)
+END FUNCTION
+
+
+BEGIN:
+    PRINT "Script Starting\r\n"
+    ResetLCDRegisters
+    TurnOnDXMLed01 = SETREG (DXMLED_01_Register, 1, LCD_Display_Board_Registers, Holding_Registers)
+
+    ITERATE:
+
+        Button_1_Value = GETREG( Local_Register_Button_1, Local_Registers, Holding_Registers)
+
+        IF (Button_1_Value = 1) AND (DummyBit_01 = 0) AND (Step_01 = 0) THEN
+            PRINT "Step 1 \r\n"
+            DummyBit_01 = 1
+            DummyBit_02 = 1
+            Step_01 = 1
+            TurnOnDXMLed02 = SETREG (DXMLED_02_Register, 1, LCD_Display_Board_Registers, Holding_Registers)
+        END IF
+
+        IF  (DummyBit_02 = 1) THEN
+
+            IF (DummyBit_03 = 0) THEN
+                DummyBit_03 = 1
+                ResetTimer = SETREG (Local_Register_Timer_1, 0, Local_Registers, Holding_Registers)
+                TurnOnDXMLed03 = SETREG (DXMLED_03_Register, 1, LCD_Display_Board_Registers, Holding_Registers)
+            END IF
+
+            IF (DummyBit_03 = 1) AND (DummyBit_04 = 0) AND (GETREG (Local_Register_Timer_1,Local_Registers,Holding_Registers) > 2) THEN
+                DummyBit_04 = 1
+                TurnOffDXMLed03 = SETREG (DXMLED_03_Register, 0, LCD_Display_Board_Registers, Holding_Registers)
+                ResetTimer = SETREG (Local_Register_Timer_1, 0, Local_Registers, Holding_Registers)
+            END IF
+
+            IF (DummyBit_03 = 1) AND (DummyBit_04 = 1) AND (GETREG (Local_Register_Timer_1,Local_Registers,Holding_Registers) > 2) THEN
+                DummyBit_04 = 0
+                TurnOnDXMLed03 = SETREG (DXMLED_03_Register, 1, LCD_Display_Board_Registers, Holding_Registers)
+                ResetTimer = SETREG (Local_Register_Timer_1, 0, Local_Registers, Holding_Registers)
+            END IF
+
+        END IF
+
+        IF (Button_1_Value = 0) AND (DummyBit_01 = 1) AND (Step_01 = 1) THEN
+            PRINT "Step 2 \r\n"
+            DummyBit_01 = 0
+        END IF
+
+        IF (Button_1_Value = 1) AND (DummyBit_01 = 0) AND (Step_01 = 1) THEN
+            PRINT "Step 3 \r\n"
+            DummyBit_01 = 1
+            DummyBit_02 = 0
+            DummyBit_03 = 0
+            Step_01 = 2
+            TurnOffDXMLed02 = SETREG (DXMLED_02_Register, 0, LCD_Display_Board_Registers, Holding_Registers)
+            TurnOnDXMLed03 = SETREG (DXMLED_03_Register, 1, LCD_Display_Board_Registers, Holding_Registers)
+        END IF
+
+        IF (Button_1_Value = 0) AND (DummyBit_01 = 1) AND (Step_01 = 2) THEN
+            PRINT "Step 4 \r\n"
+            DummyBit_01 = 0
+        END IF
+
+        IF (Button_1_Value = 1) AND (DummyBit_01 = 0) AND (Step_01 = 2) THEN
+            PRINT  "Step 5 \r\n"
+            DummyBit_01 = 1
+            Step_01 = 3
+            TurnOffDXMLed03 = SETREG (DXMLED_03_Register, 0, LCD_Display_Board_Registers, Holding_Registers)
+        END IF
+
+        IF (Button_1_Value = 0) AND (DummyBit_01 = 1) AND (Step_01 = 3) THEN
+            PRINT "Step 6 \r\n"
+            Step_01 = 0
+            DummyBit_01 = 0
+        END IF
+
+    GOTO ITERATE
+END
